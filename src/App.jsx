@@ -6,7 +6,7 @@ import Navbar from './Component/Nav';
 import Footer from './Component/Footer';
 import Register from './Component/Register';
 import Login from './Component/Login';
-import ProductList from './Component/ProductList';
+import ProductForm from './Component/ProductForm';
 import Cart from './Component/Cart';
 import LandingPage from './Component/LandingPage';
 
@@ -20,7 +20,7 @@ function App() {
                         <Route path="/" element={<LandingPage />} />
                         <Route path="/register" element={<Register />} />
                         <Route path="/login" element={<Login />} />
-                        <Route path="/products" element={<ProductList />} />
+                        <Route path="/productform" element={<ProductForm />} />
                         <Route path="/cart" element={<Cart />} />
                     </Routes>
                 </div>

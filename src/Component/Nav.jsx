@@ -97,6 +97,7 @@ const Nav = () => {
                 <Link to="/Register" style={styles.navLink}>Register</Link>
                 <Link to="/Login" style={styles.navLink}>Login</Link>
                 <Link to="/Products" style={styles.navLink}>Product</Link>
+                <Link to="/ProductForm" style={styles.navLink}>Product Form</Link>
             </nav>
             {/* Mobile Navigation */}
             <div style={styles.mobileNav}>

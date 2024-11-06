@@ -1,100 +1,205 @@
-// src/components/ProductForm.jsx
 import React, { useState } from 'react';
-import axios from 'axios';
-import { firestore, storage } from '../firebase'; // Adjust the import path based on your project structure
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'; // Import necessary storage functions
-import { collection, addDoc, doc, updateDoc } from 'firebase/firestore'; // Import Firestore functions
+import { storage } from '../firebase'; // Make sure Firebase is initialized correctly
 
-const ProductForm = ({ product, onSuccess }) => {
-    const [name, setName] = useState(product ? product.name : '');
-    const [price, setPrice] = useState(product ? product.price : '');
-    const [description, setDescription] = useState(product ? product.description : '');
-    const [image, setImage] = useState(null);
+const categories = [
+    'Laptops',
+    'Laptop Bags',
+    'Router',
+    'Desktops',
+    'Accessories',
+];
+
+const ProductForm = ({ onSubmit }) => {
+    const [product, setProduct] = useState({
+        name: '',
+        price: '',
+        category: '',
+        imageFile: null,
+        imageUrl: '',
+    });
+
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
+    // Handle form input changes
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setProduct((prev) => ({
+            ...prev,
+            [name]: value,
+        }));
+    };
+
+    // Handle image file upload
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            setImage(file);
+            setProduct((prev) => ({
+                ...prev,
+                imageFile: file,
+            }));
         }
     };
 
-    const handleSubmit = async (e) => {
+    // Upload the image to Firebase Storage and get the URL
+    const uploadImage = async (file) => {
+        const storageRef = storage.ref();
+        const imageRef = storageRef.child(`products/${file.name}`);
+        const uploadTask = imageRef.put(file);
+        return new Promise((resolve, reject) => {
+            uploadTask.on(
+                'state_changed',
+                () => {},
+                (err) => reject(err),
+                () => {
+                    uploadTask.snapshot.ref.getDownloadURL().then(resolve).catch(reject);
+                }
+            );
+        });
+    };
+
+    // Handle form submission
+    const handleFormSubmit = async (e) => {
         e.preventDefault();
+        setLoading(true);
         setError('');
-
         try {
-            let imageUrl = '';
-            if (image) {
-                const imageRef = ref(storage, `images/${image.name}`);
-                await uploadBytes(imageRef, image);
-                imageUrl = await getDownloadURL(imageRef);
+            // If there's an image, upload it
+            let imageUrl = product.imageUrl;
+            if (product.imageFile) {
+                imageUrl = await uploadImage(product.imageFile);
             }
 
-            if (product) {
-                // Update existing product
-                const productRef = doc(firestore, 'products', product.id);
-                await updateDoc(productRef, {
-                    name,
-                    price: parseFloat(price),
-                    description,
-                    image: imageUrl || product.image, // Keep old image if no new image is uploaded
-                });
-            } else {
-                // Add new product
-                await addDoc(collection(firestore, 'products'), {
-                    name,
-                    price: parseFloat(price),
-                    description,
-                    image: imageUrl,
-                });
-            }
+            // Submit the product data
+            const productData = { ...product, imageUrl };
+            onSubmit(productData);
 
-            onSuccess(); // Call the success callback to refresh the product list or redirect
-        } catch (error) {
-            setError('Error adding product: ' + error.message);
+            setProduct({
+                name: '',
+                price: '',
+                category: '',
+                imageFile: null,
+                imageUrl: '',
+            }); // Reset form
+
+        } catch (err) {
+            setError('Error submitting product. Please try again.');
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        <form onSubmit={handleSubmit}>
-            {error && <p style={{ color: 'red' }}>{error}</p>}
-            <div>
-                <label>Name:</label>
-                <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                />
-            </div>
-            <div>
-                <label>Price:</label>
-                <input
-                    type="number"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    required
-                />
-            </div>
-            <div>
-                <label>Description:</label>
-                <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    required
-                />
-            </div>
-            <div>
-                <label>Image:</label>
-                <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                />
-            </div>
-            <button type="submit">Submit</button>
-        </form>
+        <div style={{
+            maxWidth: '500px',
+            margin: '20px auto',
+            padding: '20px',
+            backgroundColor: '#f8f8f8',
+            borderRadius: '8px',
+            boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)'
+        }}>
+            <h3 style={{ textAlign: 'center', marginBottom: '20px', color: '#333' }}>Add New Product</h3>
+            {error && <p style={{ color: 'red', fontSize: '14px', marginBottom: '20px' }}>{error}</p>}
+            <form onSubmit={handleFormSubmit} style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ marginBottom: '15px' }}>
+                    <label htmlFor="name" style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '5px' }}>Product Name</label>
+                    <input
+                        type="text"
+                        name="name"
+                        value={product.name}
+                        onChange={handleInputChange}
+                        placeholder="Product Name"
+                        required
+                        style={{
+                            padding: '8px',
+                            fontSize: '14px',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
+                            width: '100%'
+                        }}
+                    />
+                </div>
+
+                <div style={{ marginBottom: '15px' }}>
+                    <label htmlFor="price" style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '5px' }}>Product Price ($)</label>
+                    <input
+                        type="number"
+                        name="price"
+                        value={product.price}
+                        onChange={handleInputChange}
+                        placeholder="Product Price"
+                        required
+                        style={{
+                            padding: '8px',
+                            fontSize: '14px',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
+                            width: '100%'
+                        }}
+                    />
+                </div>
+
+                <div style={{ marginBottom: '15px' }}>
+                    <label htmlFor="category" style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '5px' }}>Product Category</label>
+                    <select
+                        name="category"
+                        value={product.category}
+                        onChange={handleInputChange}
+                        required
+                        style={{
+                            padding: '8px',
+                            fontSize: '14px',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
+                            width: '100%'
+                        }}
+                    >
+                        <option value="">Select Category</option>
+                        {categories.map((category) => (
+                            <option key={category} value={category}>
+                                {category}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                <div style={{ marginBottom: '15px' }}>
+                    <label htmlFor="imageFile" style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '5px' }}>Product Image</label>
+                    <input
+                        type="file"
+                        name="imageFile"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        required
+                        style={{
+                            padding: '8px',
+                            fontSize: '14px',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
+                            width: '100%'
+                        }}
+                    />
+                    {product.imageFile && (
+                        <p style={{ fontSize: '14px', color: '#555' }}>Image selected: {product.imageFile.name}</p>
+                    )}
+                </div>
+
+                <div style={{ marginBottom: '15px' }}>
+                    <button type="submit" disabled={loading} style={{
+                        backgroundColor: '#4caf50',
+                        color: 'white',
+                        border: 'none',
+                        padding: '10px',
+                        fontSize: '16px',
+                        cursor: 'pointer',
+                        borderRadius: '4px',
+                        width: '100%'
+                    }}>
+                        {loading ? 'Submitting...' : 'Add Product'}
+                    </button>
+                </div>
+            </form>
+        </div>
     );
 };
 

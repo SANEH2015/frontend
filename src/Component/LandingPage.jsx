@@ -1,25 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faShoppingCart, faSearch } from '@fortawesome/free-solid-svg-icons';
-import { collection, getDocs } from 'firebase/firestore';
-import { firestore } from '../firebase'; 
+import { db } from '../firebase';  // Import the Firestore instance correctly (as `db`)
+import { collection, getDocs } from 'firebase/firestore';  // Import Firestore methods
 
 const categories = [
-    { name: 'Electronics', image: '../assets/image.jpg' },
-    { name: 'Fashion', image: '../assets/image.jpg' },
-    { name: 'Home & Garden', image: '../assets/image.jpg' },
-    { name: 'Sports', image: '../assets/image.jpg' },
+    { 
+        name: 'Laptops', 
+        image: 'https://images.unsplash.com/photo-1517433456452-f9633a875f6f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=MnwzMDg2NHwwfDF8c2VhcmNofDJ8fGxhcHRvcHN8ZW58MHx8fHwxNjY1MjU2NzU2&ixlib=rb-4.0.3&q=80&w=1080' 
+    },
+    { 
+        name: 'Laptop Bags', 
+        image: 'https://images.unsplash.com/photo-1618755935639-267a06329a41?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=MnwzMDg2NHwwfDF8c2VhcmNofDF8fGxhcHRvcCUyMGJhZ3xlbnwwfHx8fDE2NjUyNTY3NTY&ixlib=rb-4.0.3&q=80&w=1080' 
+    },
+    { 
+        name: 'Router', 
+        image: 'https://images.unsplash.com/photo-1605902711622-cfb43c44339d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=MnwzMDg2NHwwfDF8c2VhcmNofDJ8fHJvdXRlcnxlbnwwfHx8fDE2NjUyNTY3NTY&ixlib=rb-4.0.3&q=80&w=1080' 
+    },
+    { 
+        name: 'Desktops', 
+        image: 'https://images.unsplash.com/photo-1532287387152-4f54c2d88c74?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=MnwzMDg2NHwwfDF8c2VhcmNofDd8fGRlc2t0b3B8ZW58MHx8fHwxNjY1MjU2NzU2&ixlib=rb-4.0.3&q=80&w=1080' 
+    },
+    { 
+        name: 'Accessories', 
+        image: 'https://images.unsplash.com/photo-1527443154391-507e9dc6c5cc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=MnwzMDg2NHwwfDF8c2VhcmNofDV8fGNvbXB1dGVyJTIwYWNjZXNzb3JpZXN8ZW58MHx8fHwxNjY1MjU2NzU2&ixlib=rb-4.0.3&q=80&w=1080' 
+    },
 ];
 
 const slideshowImages = [
-    'https://example.com/image1.jpg', // Ensure these are valid URLs
-    'https://example.com/image2.jpg',
-    'https://example.com/image3.jpg',
+    'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=MnwzMDg2NHwwfDF8c2VhcmNofDF8fGNvZGUlMjBjb21wdXRlcnxlbnwwfHx8fDE2MzE4MjMwMzI&ixlib=rb-4.0.3&q=80&w=1080', // Coding on laptop
+    'https://images.unsplash.com/photo-1519389950473-47ba0277781c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=MnwzMDg2NHwwfDF8c2VhcmNofDF8fGRldmVsb3BlcnxlbnwwfHx8fDE2MzE4MjMwMzI&ixlib=rb-4.0.3&q=80&w=1080', // Coding setup with dual monitors
+    'https://images.unsplash.com/photo-1498050108023-c5249f4df085?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=MnwzMDg2NHwwfDF8c2VhcmNofDF8fGVsZWN0cm9uaWNzfGVufDB8fHx8MTYyNjEwNzg4OA&ixlib=rb-4.0.3&q=80&w=1080', // Electronics and coding
+    'https://images.unsplash.com/photo-1580894908361-7a439217b2d2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=MnwzMDg2NHwwfDF8c2VhcmNofDZ8fGVsZWN0cm9uaWNzJTIwbGFwdG9wfGVufDB8fHx8MTY2MTU1OTgyNA&ixlib=rb-4.0.3&q=80&w=1080', // Laptop setup with coding environment
+    'https://images.unsplash.com/photo-1587614295999-6d8e1e07f42b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=MnwzMDg2NHwwfDF8c2VhcmNofDh8fGxhcmdlJTIwY29tcHV0ZXIlMjBtb25pdG9yfGVufDB8fHx8MTY2NTI1Njc1Ng&ixlib=rb-4.0.3&q=80&w=1080', // Laptop on desk with accessories
 ];
 
 const LandingPage = () => {
     const [currentSlide, setCurrentSlide] = useState(0);
-    const [products, setProducts] = useState([]); 
+    const [products, setProducts] = useState([]);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -32,7 +50,7 @@ const LandingPage = () => {
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const productsCollection = collection(firestore, 'products');
+                const productsCollection = collection(db, 'products');  // Use `db` to access Firestore collection
                 const snapshot = await getDocs(productsCollection);
                 const fetchedProducts = snapshot.docs.map(doc => ({
                     id: doc.id,
@@ -43,9 +61,9 @@ const LandingPage = () => {
                 console.error('Error fetching products:', error);
             }
         };
-
+    
         fetchProducts();
-    }, []);
+    }, [])
 
     const landingPageStyle = {
         backgroundImage: "url('/images/background.jpg')",
@@ -111,19 +129,19 @@ const LandingPage = () => {
     };
 
     const cardStyle = (image) => ({
-        backgroundImage: `url(${image})`, // Set the background image from the product
+        backgroundImage: `url(${image})`,
         backgroundSize: 'cover',
         borderRadius: '10px',
         padding: '20px',
         margin: '10px',
         textAlign: 'center',
-        width: '200px', // Adjusted width for the card
-        height: '250px', // Set a fixed height for the card
+        width: '200px',
+        height: '250px',
         boxShadow: '0 4px 10px rgba(0, 0, 0, 0.2)',
-        color: 'black', // Set text color to black
+        color: 'black',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'space-between', // To space out content in the card
+        justifyContent: 'space-between',
     });
 
     return (
@@ -169,7 +187,7 @@ const LandingPage = () => {
                 </div>
             </div>
 
-            <h2 style={{ color: 'black', marginTop: '30px' }}>Shop by Category</h2> {/* Changed to black */}
+            <h2 style={{ color: 'black', marginTop: '30px' }}>Shop by Category</h2>
             <div style={categoryCardStyle}>
                 {categories.map((category) => (
                     <div key={category.name} style={cardStyle(category.image)}>
@@ -179,7 +197,7 @@ const LandingPage = () => {
                 ))}
             </div>
 
-            <h2 style={{ color: 'black', marginTop: '30px' }}>Featured Products</h2> {/* Changed to black */}
+            <h2 style={{ color: 'black', marginTop: '30px' }}>Featured Products</h2>
             <div style={categoryCardStyle}>
                 {products.map((product) => (
                     <div key={product.id} style={cardStyle(product.image || '/path/to/default/image.jpg')}>
